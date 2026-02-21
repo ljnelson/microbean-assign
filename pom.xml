@@ -4,7 +4,7 @@
 
   <groupId>org.microbean</groupId>
   <artifactId>microbean-assign</artifactId>
-  <version>0.0.12-SNAPSHOT</version>
+  <version>0.0.13-SNAPSHOT</version>
 
   <name>microBean™ Assign</name>
   <description>microBean™ Assign: Utility classes for implementing Java type assignment.</description>
