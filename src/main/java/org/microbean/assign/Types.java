@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2025 microBean™.
+ * Copyright © 2025–2026 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -43,9 +43,13 @@ import org.microbean.construct.Domain;
 
 import static java.lang.constant.ConstantDescs.BSM_INVOKE;
 
+import static java.lang.constant.MethodHandleDesc.ofConstructor;
+
 import static java.util.Comparator.comparing;
 
 import static java.util.HashSet.newHashSet;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A utility class that assists with working with a {@link Domain} instance.
@@ -57,14 +61,6 @@ import static java.util.HashSet.newHashSet;
  * @see Domain
  */
 public class Types implements Constable {
-
-
-  /*
-   * Static fields.
-   */
-
-
-  private static final ClassDesc CD_Domain = ClassDesc.of("org.microbean.construct.Domain");
 
 
   /*
@@ -85,16 +81,16 @@ public class Types implements Constable {
   /**
    * Creates a new {@link Types}.
    *
-   * @param domain a {@link Domain}; must not be {@code null}
+   * @param domain a non-{@code null} {@link Domain}
    *
    * @exception NullPointerException if {@code domain} is {@code null}
    */
   public Types(final Domain domain) {
     super();
-    this.domain = Objects.requireNonNull(domain, "domain");
     this.c = comparing(TypeMirror::getKind, PrimitiveAndReferenceTypeKindComparator.INSTANCE)
       .thenComparing(new SpecializationComparator(domain))
       .thenComparing(Types::erasedName);
+    this.domain = domain;
   }
 
 
@@ -122,8 +118,8 @@ public class Types implements Constable {
   public Optional<? extends ConstantDesc> describeConstable() {
     return (this.domain instanceof Constable c ? c.describeConstable() : Optional.<ConstantDesc>empty())
       .map(domainDesc -> DynamicConstantDesc.of(BSM_INVOKE,
-                                                MethodHandleDesc.ofConstructor(ClassDesc.of(this.getClass().getName()),
-                                                                               CD_Domain),
+                                                ofConstructor(this.getClass().describeConstable().orElseThrow(),
+                                                              Domain.class.describeConstable().orElseThrow()),
                                                 domainDesc));
   }
 
@@ -132,7 +128,7 @@ public class Types implements Constable {
    *
    * @return the {@link Domain} affiliated with this {@link Types} instance; never {@code null}
    */
-  public final Domain domain() {
+  protected final Domain domain() {
     return this.domain;
   }
 
@@ -180,7 +176,7 @@ public class Types implements Constable {
   }
 
   /**
-   * Returns a non-{@code null} {@link SupertypeList} of the supertypes of the supplied {@link TypeMirror}.
+   * Returns a non-{@code null}, determinate {@link SupertypeList} of the supertypes of the supplied {@link TypeMirror}.
    *
    * <p>No element in the returned {@link List} will be {@code null}.</p>
    *
@@ -204,9 +200,9 @@ public class Types implements Constable {
    *
    * </ol>
    *
-   * @param t a {@link TypeMirror}; must not be {@code null}
+   * @param t a non-{@code null} {@link TypeMirror}
    *
-   * @return a non-{@code null} {@link SupertypeList} of the supertypes of the supplied {@link TypeMirror}
+   * @return a non-{@code null}, determinate {@link SupertypeList} of the supertypes of the supplied {@link TypeMirror}
    *
    * @exception NullPointerException if {@code t} is {@code null}
    *
@@ -225,8 +221,8 @@ public class Types implements Constable {
   }
 
   /**
-   * Returns a non-{@code null} {@link SupertypeList} of the supertypes of the supplied {@link TypeMirror}, filtered
-   * using the supplied {@link Predicate}.
+   * Returns a non-{@code null}, determinate {@link SupertypeList} of the supertypes of the supplied {@link TypeMirror},
+   * filtered using the supplied {@link Predicate}.
    *
    * <p>No element in the returned {@link SupertypeList} will be {@code null}.</p>
    *
@@ -235,8 +231,6 @@ public class Types implements Constable {
    *
    * <p>No two elements in the list will be {@linkplain Objects#equals(Object) equal} or {@linkplain
    * Domain#sameType(TypeMirror, TypeMirror) the same type}. (The {@link SupertypeList} is an ordered set.)</p>
-   *
-   * <p>This method returns determinate values.</p>
    *
    * <p>The elements of the returned {@link SupertypeList} will be in the following (partial) order:</p>
    *
@@ -248,14 +242,14 @@ public class Types implements Constable {
    *
    * </ol>
    *
-   * @param t a {@link TypeMirror}; must not be {@code null}
+   * @param t a non-{@code null} {@link TypeMirror}
    *
-   * @param p a {@link Predicate}; must not be {@code null}
+   * @param p a non-{@code null} {@link Predicate}
    *
-   * @return a non-{@code null} {@link SupertypeList} of the supertypes of the supplied {@link TypeMirror}, filtered
-   * using the supplied {@link Predicate}
+   * @return a non-{@code null}, determinate {@link SupertypeList} of the supertypes of the supplied {@link TypeMirror},
+   * filtered using the supplied {@link Predicate}
    *
-   * @exception NullPointerException if either {@code t} or {@code p} is {@code null}
+   * @exception NullPointerException if any argument is {@code null}
    *
    * @see Domain#directSupertypes(TypeMirror)
    *
@@ -279,12 +273,13 @@ public class Types implements Constable {
       }
     } else {
       if (interfaceTypes.size() > 1) {
-        // interface types need to be sorted because they can show up in multiple implements clauses and you want the set
-        // to be determinate.
+        // interface types need to be sorted because they can show up in multiple implements clauses and you want the
+        // set to be determinate.
         //
         // (Non-interface supertypes are already sorted from most-specific to least and will not contain primitive
-        // types. By extension, array types will precede declared types (java.lang.Object). If t is a type variable, then
-        // either its supertype will be another type variable or a declared type, so type variables precede everything.)
+        // types. By extension, array types will precede declared types (java.lang.Object). If t is a type variable,
+        // then either its supertype will be another type variable or a declared type, so type variables precede
+        // everything.)
         interfaceTypes.sort(this.c);
       }
       if (types.isEmpty()) {
@@ -337,7 +332,7 @@ public class Types implements Constable {
   }
 
   /**
-   * Returns the <dfn>erased name</dfn> of the supplied {@link TypeMirror}.
+   * Returns the non-{@code null}, determinate <dfn>erased name</dfn> of the supplied {@link TypeMirror}.
    *
    * <p><dfn>Erased name</dfn> is not a term defined or used by the Java Language Specification. Its definition and
    * contract follow.</p>
@@ -382,9 +377,9 @@ public class Types implements Constable {
    * <p>The erased name of any other {@link TypeMirror} is the return value of an invocation of its {@link
    * Object#toString() toString()} method.</p>
    *
-   * @param t a {@link TypeMirror}; must not be {@code null}
+   * @param t a non-{@code null} {@link TypeMirror}
    *
-   * @return the <dfn>erased name</dfn> of the supplied {@link TypeMirror}; never {@code null}
+   * @return the non-{@code null}, determinate <dfn>erased name</dfn> of the supplied {@link TypeMirror}
    *
    * @exception NullPointerException if {@code t} is {@code null}
    */
@@ -413,7 +408,7 @@ public class Types implements Constable {
     };
   }
 
-  private static final <T> boolean returnTrue(final T ignored) {
+  private static final <X> boolean returnTrue(final X ignored) {
     return true;
   }
 

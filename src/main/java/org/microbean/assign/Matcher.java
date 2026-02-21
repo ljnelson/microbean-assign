@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2025 microBean™.
+ * Copyright © 2025–2026 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,16 +19,16 @@ import java.util.function.BiPredicate;
  * A {@link BiPredicate} with particular semantics associated with its {@link #test(Object, Object) test(Object,
  * Object)} method.
  *
- * @param <A> the criteria object
+ * @param <C> the criteria object
  *
- * @param <B> the object being tested
+ * @param <T> the object being tested
  *
  * @author <a href="https://about.me/lairdnelson" target="_top">Laird Nelson</a>
  *
  * @see #test(Object, Object)
  */
 @FunctionalInterface
-public interface Matcher<A, B> extends BiPredicate<A, B> {
+public interface Matcher<C, T> extends BiPredicate<C, T> {
 
   /**
    * Returns {@code true} if and only if the second argument <dfn>matches</dfn> the first argument.
@@ -36,18 +36,18 @@ public interface Matcher<A, B> extends BiPredicate<A, B> {
    * <p>The order of arguments may therefore be significant for {@link Matcher} implementations that do not represent
    * equality tests.</p>
    *
-   * @param a an object serving as a kind of criteria; must not be {@code null}
+   * @param c an object serving as a kind of criteria; must not be {@code null}
    *
-   * @param b an object to test against the criteria; must not be {@code null}
+   * @param t an object to test against the criteria; must not be {@code null}
    *
    * @return {@code true} if and only if the second argument <dfn>matches</dfn> the first argument; {@code false}
    * otherwise
    *
-   * @exception NullPointerException if either {@code a} or {@code b} is {@code null}
+   * @exception NullPointerException if either {@code c} or {@code t} is {@code null}
    *
    * @exception IllegalArgumentException if either non-{@code null} argument is unsuitable for any reason
    */
-  @Override // BiPredicate<A, B>
-  public boolean test(final A a, final B b);
+  @Override // BiPredicate<C, T>
+  public boolean test(final C c, final T t);
 
 }

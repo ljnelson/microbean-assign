@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2025 microBean™.
+ * Copyright © 2025–2026 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -19,7 +19,6 @@ import java.lang.constant.ConstantDesc;
 import java.lang.constant.DynamicConstantDesc;
 import java.lang.constant.MethodHandleDesc;
 
-import java.util.Objects;
 import java.util.Optional;
 
 import java.util.function.Predicate;
@@ -35,6 +34,10 @@ import org.microbean.construct.Domain;
 
 import static java.lang.constant.ConstantDescs.BSM_INVOKE;
 
+import static java.lang.constant.MethodHandleDesc.ofConstructor;
+
+import static java.util.Objects.requireNonNull;
+
 /**
  * A partial implementation of a {@link Matcher} that tests if one {@link TypeMirror} <dfn>matches</dfn> another.
  *
@@ -47,14 +50,6 @@ import static java.lang.constant.ConstantDescs.BSM_INVOKE;
  * @author <a href="https://about.me/lairdnelson" target="_top">Laird Nelson</a>
  */
 public abstract class AbstractTypeMatcher implements Constable, Matcher<TypeMirror, TypeMirror> {
-
-
-  /*
-   * Static fields.
-   */
-
-
-  private static final ClassDesc CD_Domain = ClassDesc.of("org.microbean.construct.Domain");
 
 
   /*
@@ -77,7 +72,7 @@ public abstract class AbstractTypeMatcher implements Constable, Matcher<TypeMirr
    */
   protected AbstractTypeMatcher(final Domain domain) {
     super();
-    this.domain = Objects.requireNonNull(domain, "domain");
+    this.domain = requireNonNull(domain, "domain");
   }
 
 
@@ -85,6 +80,11 @@ public abstract class AbstractTypeMatcher implements Constable, Matcher<TypeMirr
    * Instance methods.
    */
 
+
+  // I'm leaving these commented-out methods in place for a while to remind me (and future me) of the fact that much of
+  // CDI's rules around assignability are just poorly written versions of the existing Java Language Specification. For
+  // example, removing bounds from type variables is not necessary since the supertype of an intersection type is its
+  // leftmost bound. Similarly, all the logic around wildcards is handled by the contains relation.
 
   // Is t a type that CDI considers to be "parameterized" in its own sense of the word, not the sense used by the Java
   // Language Specification?
@@ -286,12 +286,12 @@ public abstract class AbstractTypeMatcher implements Constable, Matcher<TypeMirr
    *
    * @exception NullPointerException if either argument is {@code null}
    *
-   * @see Domain#assignable(TypeMirror, TypeMirror) 
+   * @see Domain#assignable(TypeMirror, TypeMirror)
    */
   // Is classOrArrayTypePayload assignable to receiver following the rules of Java assignability
   // (i.e. covariance)?
   protected boolean covariantlyAssignable(final TypeMirror receiver, final TypeMirror payload) {
-    return Objects.requireNonNull(receiver, "receiver") == payload || this.domain().assignable(payload, receiver); // yes, "backwards"
+    return requireNonNull(receiver, "receiver") == payload || this.domain().assignable(payload, receiver); // yes, "backwards"
   }
 
   /**
@@ -312,11 +312,11 @@ public abstract class AbstractTypeMatcher implements Constable, Matcher<TypeMirr
    * @see Constable#describeConstable()
    */
   @Override // Constable
-  public Optional<? extends ConstantDesc> describeConstable() {
+  public Optional<DynamicConstantDesc<? extends AbstractTypeMatcher>> describeConstable() {
     return (this.domain() instanceof Constable c ? c.describeConstable() : Optional.<ConstantDesc>empty())
       .map(domainDesc -> DynamicConstantDesc.of(BSM_INVOKE,
-                                                MethodHandleDesc.ofConstructor(ClassDesc.of(this.getClass().getName()),
-                                                                               CD_Domain),
+                                                ofConstructor(this.getClass().describeConstable().orElseThrow(),
+                                                              Domain.class.describeConstable().orElseThrow()),
                                                 domainDesc));
   }
 
@@ -371,7 +371,7 @@ public abstract class AbstractTypeMatcher implements Constable, Matcher<TypeMirr
     // CDI has an undefined notion of "identical to". This method attempts to divine and implement the intent. Recall
     // that javax.lang.model.* compares types with "sameType" semantics.
     return
-      Objects.requireNonNull(receiver, "receiver") == Objects.requireNonNull(payload, "payload") ||
+      requireNonNull(receiver, "receiver") == requireNonNull(payload, "payload") ||
       this.domain().sameType(receiver, payload);
   }
 
