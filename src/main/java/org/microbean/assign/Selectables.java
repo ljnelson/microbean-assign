@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2025 microBean™.
+ * Copyright © 2025–2026 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,6 +13,7 @@
  */
 package org.microbean.assign;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
+
+import javax.lang.model.AnnotatedConstruct;
+
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Utility methods for working with {@link Selectable}s.
@@ -36,7 +46,7 @@ public final class Selectables {
   private Selectables() {
     super();
   }
-  
+
   /**
    * Returns a {@link Selectable} that caches its results.
    *
@@ -54,7 +64,7 @@ public final class Selectables {
    *
    * @see #caching(Selectable, BiFunction)
    */
-  public static <C, E> Selectable<C, E> caching(final Selectable<C, E> selectable) {
+  public static <C, E> Selectable<C, E> caching(final Selectable<? super C, E> selectable) {
     final Map<C, List<E>> selectionCache = new ConcurrentHashMap<>();
     return Selectables.<C, E>caching(selectable, selectionCache::computeIfAbsent);
   }
@@ -78,9 +88,68 @@ public final class Selectables {
    *
    * @see ConcurrentHashMap#computeIfAbsent(Object, Function)
    */
-  public static <C, E> Selectable<C, E> caching(final Selectable<C, E> selectable,
+  public static <C, E> Selectable<C, E> caching(final Selectable<? super C, E> selectable,
                                                 final BiFunction<? super C, Function<? super C, ? extends List<E>>, ? extends List<E>> f) {
     return c -> f.apply(c, selectable::select);
+  }
+  
+  /**
+   * An <strong>experimental</strong> method that converts a {@link Selectable} accepting {@link Annotated
+   * Annotated&lt;AnnotatedConstruct&gt;} instances into a {@link Selectable} accepting {@link AnnotatedConstruct}
+   * instances.
+   *
+   * @param <C> the criteria type
+   *
+   * @param <E> the element type
+   *
+   * @param s a non-{@code null} {@link Selectable} accepting {@link Annotated Annotated&lt;AnnotatedConstruct&gt;}
+   * instances
+   *
+   * @return a non-{@code null}, determinate {@link Selectable} accepting {@link AnnotatedConstruct} instances
+   *
+   * @exception NullPointerException if {@code s} is {@code null}
+   *
+   * @see #convert(Selectable, Predicate)
+   *
+   * @see Annotated
+   *
+   * @see AnnotatedConstruct
+   */
+  @Deprecated(forRemoval = true) // Annotated.of(AnnotatedConstruct) exists
+  public static <C extends AnnotatedConstruct, E> Selectable<C, E> convert(final Selectable<? super Annotated<C>, E> s) {
+    return convert(s, null);
+  }
+  
+  /**
+   * An <strong>experimental</strong> method that converts a {@link Selectable} accepting {@link Annotated
+   * Annotated&lt;AnnotatedConstruct&gt;} instances into a {@link Selectable} accepting {@link AnnotatedConstruct}
+   * instances.
+   *
+   * @param <C> the criteria type
+   *
+   * @param <E> the element type
+   *
+   * @param s a non-{@code null} {@link Selectable} accepting {@link Annotated Annotated&lt;AnnotatedConstruct&gt;}
+   * instances
+   *
+   * @param annotationElementInclusionPredicate a {@link Predicate} that returns {@code true} if a given {@link
+   * ExecutableElement}, representing an annotation element, is to be included in comparison operations; may be {@code
+   * null} in which case it is as if {@code e -> true} were supplied instead
+   *
+   * @return a non-{@code null}, determinate {@link Selectable} accepting {@link AnnotatedConstruct} instances
+   *
+   * @exception NullPointerException if {@code s} is {@code null}
+   *
+   * @see Annotated
+   *
+   * @see Annotated#of(AnnotatedConstruct, Predicate)
+   *
+   * @see AnnotatedConstruct
+   */
+  @Deprecated(forRemoval = true) // Annotated.of(AnnotatedConstruct) exists
+  public static <C extends AnnotatedConstruct, E> Selectable<C, E> convert(final Selectable<? super Annotated<C>, E> s,
+                                                                           final Predicate<? super ExecutableElement> annotationElementInclusionPredicate) {
+    return ac -> s.select(Annotated.of(ac, annotationElementInclusionPredicate));
   }
 
   /**
@@ -111,9 +180,10 @@ public final class Selectables {
    *
    * <p>The {@link Selectable} instances returned by this method may or may not cache their selections.</p>
    *
-   * <p>The selector must (indirectly) designate a sublist from the supplied {@link Collection} as mediated by the
-   * supplied criteria. The selector must additionally be idempotent and must produce a determinate value when given the
-   * same arguments.</p>
+   * <p>The selector tests its first argument to see if it is <dfn>selected</dfn> by its second argument. The selector
+   * is invoked repeatedly. If, for any given invocation, the first argument is selected, the selected element is added
+   * to the selection that is eventually returned as a sublist of the supplied {@link Collection}. The selector must
+   * additionally be idempotent and must produce a determinate value when given the same arguments.</p>
    *
    * <p>No validation of these semantics of the selector is performed.</p>
    *
@@ -132,9 +202,38 @@ public final class Selectables {
   @SuppressWarnings("unchecked")
   public static <C, E> Selectable<C, E> filtering(final Collection<? extends E> collection,
                                                   final BiPredicate<? super E, ? super C> p) {
-    Objects.requireNonNull(p, "p");
+    requireNonNull(p, "p");
     return collection.isEmpty() ? empty() : c -> (List<E>)collection.stream().filter(e -> p.test(e, c)).toList();
   }
 
-  
+  /*
+   * An <strong>experimental</strong> convenience method that returns a non-{@code null}, determinate {@link Selectable}
+   * representing the composition of the supplied {@link Selectable} with the supplied {@code argumentTransformer} {@link
+   * Function}.
+   *
+   * @param <B> the (criteria) type of the sole parameter of the returned {@link Selectable}
+   *
+   * @param <C> the (criteria) type of the sole parameter of the supplied {@link Selectable}
+   *
+   * @param <E> the element type of both {@link Selectable}s
+   *
+   * @param selectable a non-{@code null} {@link Selectable}
+   *
+   * @param argumentTransformer a non-{@code null} {@link Function} that maps its sole parameter (of type {@code B}) to
+   * a value of type {@code C} suitable for supplying as criteria to the supplied {@link Selectable}; must be idempotent
+   * and return a determinate value
+   *
+   * @return a non-{@code null}, determinate, composed {@link Selectable}
+   *
+   * @exception NullPointerException if any argument is {@code null}
+   *
+   * @see Function#compose(Function)
+   */
+  /*
+  public static <B, C, E> Selectable<B, E> compose(final Selectable<? super C, E> selectable,
+                                                   final Function<? super B, ? extends C> argumentTransformer) {
+    return ((Function<C, List<E>>)selectable::select).compose(argumentTransformer)::apply;
+  }
+  */
+
 }

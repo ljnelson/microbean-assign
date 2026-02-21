@@ -2,6 +2,8 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.microbean/microbean-assign.svg?label=Maven%20Central)](https://search.maven.org/artifact/org.microbean/microbean-assign)
 
+![0% AI](https://img.shields.io/badge/%F0%9F%A4%96_AI-0%25_%F0%9F%8C%BC-brightgreen)
+
 The microBean™ Assign project provides classes and interfaces assisting with implementing Java type assignment.
 
 # Status
@@ -27,7 +29,7 @@ dependency:
   <groupId>org.microbean</groupId>
   <artifactId>microbean-assign</artifactId>
   <!-- Always check https://search.maven.org/artifact/org.microbean/microbean-bean for up-to-date available versions. -->
-  <version>0.0.11</version>
+  <version>0.0.12</version>
 </dependency>
 ```
 

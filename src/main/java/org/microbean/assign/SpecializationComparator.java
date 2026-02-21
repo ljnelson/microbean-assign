@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2025 microBean™.
+ * Copyright © 2025–2026 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -38,7 +38,7 @@ public final class SpecializationComparator implements Comparator<TypeMirror> {
   /**
    * Creates a new {@link SpecializationComparator}.
    *
-   * @param domain a {@link Domain}; must not be {@code null}
+   * @param domain a non-{@code null} {@link Domain}
    *
    * @exception NullPointerException if {@code domain} is {@code null}
    */
@@ -85,12 +85,12 @@ public final class SpecializationComparator implements Comparator<TypeMirror> {
       return 1; // nulls right
     } else if (s == null) {
       return -1; // nulls right
-    } else if (domain.sameType(t, s)) {
+    } else if (this.domain.sameType(t, s)) {
       return 0;
-    } else if (domain.subtype(t, s)) {
+    } else if (this.domain.subtype(t, s)) {
       // t is a subtype of s; s is a proper supertype of t
       return -1;
-    } else if (domain.subtype(s, t)) {
+    } else if (this.domain.subtype(s, t)) {
       // s is a subtype of t; t is a proper supertype of s
       return 1;
     } else {

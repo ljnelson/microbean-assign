@@ -1,6 +1,6 @@
 /* -*- mode: Java; c-basic-offset: 2; indent-tabs-mode: nil; coding: utf-8-unix -*-
  *
- * Copyright © 2025 microBean™.
+ * Copyright © 2026 microBean™.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,14 +13,16 @@
  */
 package org.microbean.assign;
 
-import java.util.Objects;
+import javax.lang.model.element.Element;
+
+import static java.util.Objects.requireNonNull;
 
 /**
- * An assignment of a value to an {@link AttributedElement}.
+ * An assignment of a value to an {@link Annotated Annotated&lt;? extends Element&gt;}.
  *
- * @param <R> the value type
+ * @param <R> the value type; must be logically assignable to the {@linkplain Element#asType() type of the assignee}
  *
- * @param assignee the {@link AttributedElement}; must not be {@code null}
+ * @param assignee the {@link Annotated Annotated&lt;? extends Element&gt;}; must not be {@code null}
  *
  * @param value the value; may be {@code null}
  *
@@ -29,17 +31,17 @@ import java.util.Objects;
 // You're going to be tempted to replace the value component with a Supplier component. Don't do it. An assignment is a
 // value that belongs to, e.g., a field, so even if the value "came from" none/dependent/prototype scope, it was already
 // sourced and "belongs to" the field.
-public final record Assignment<R>(AttributedElement assignee, R value) {
+public final record Assignment<R>(Annotated<? extends Element> assignee, R value) {
 
   /**
    * Creates a new {@link Assignment}.
    *
-   * @param assignee the {@link AttributedElement}; must not be {@code null}
+   * @param assignee the {@link Annotated Annotated&lt;? extends Element&gt;}; must not be {@code null}
    *
    * @param value the contextual reference; may be {@code null}
    */
   public Assignment {
-    Objects.requireNonNull(assignee, "assignee");
+    requireNonNull(assignee, "assignee");
   }
 
 }
