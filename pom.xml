@@ -4,7 +4,7 @@
 
   <groupId>org.microbean</groupId>
   <artifactId>microbean-assign</artifactId>
-  <version>0.0.13</version>
+  <version>0.0.14-SNAPSHOT</version>
 
   <name>microBean™ Assign</name>
   <description>microBean™ Assign: Utility classes for implementing Java type assignment.</description>
@@ -43,7 +43,7 @@
     <connection>${scm.url}</connection>
     <developerConnection>${scm.url}</developerConnection>
     <url>https://github.com/microbean/microbean-assign/</url>
-    <tag>v0.0.13</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <issueManagement>
